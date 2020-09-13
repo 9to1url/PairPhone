@@ -12,6 +12,14 @@ LSRC = $(LOBJECTS:.o=.c)
 
 LIBS = -lm
 
+all: encoder decoder libmelpe.a
+
+encoder: encoder.c $(LOBJECTS)
+	gcc $(CFLAGS) $(LIBS) $(LOBJECTS) encoder.c -o encoder
+
+decoder: decoder.c $(LOBJECTS)
+	gcc $(CFLAGS) $(LIBS) $(LOBJECTS) decoder.c -o decoder
+
 libmelpe.a: $(LOBJECTS)
 	/bin/rm -f libmelpe.a
 	ar cr libmelpe.a $(LOBJECTS)
