@@ -14,13 +14,13 @@ CC = gcc -Wall # for GNU's gcc compiler
 CELPFLAGS = -fomit-frame-pointer -ffast-math -funroll-loops
 LFLAGS = -lm
 CCFLAGS = -DLINUX_ALSA -DM_LITTLE_ENDIAN
-SOUNDLIB = -lasound 
+SOUNDLIB = -lasound
 
 #   Compiler flags
 
 CFLAGS = $(DEBUG) $(PKOPTS) -Iaudio -Icrypto -Imelpe -Imodem -Ifec -Ivad $(CARGS) $(DUPLEX) $(CCFLAGS) $(DOMAIN)
 
-BINARIES = pp
+BINARIES = pp melpe_enc melpe_dec
 
 PROGRAMS = $(BINARIES) $(SCRIPTS)
 
@@ -43,6 +43,13 @@ pp: $(SPKROBJS) audiolib.o cryptolib.o melpelib.o modemlib.o feclib.o vadlib.o
 	$(CC) $(SPKROBJS) audio/libaudio.a crypto/libcrypto.a melpe/libmelpe.a modem/libmodem.a fec/libfec.a vad/libvad.a  $(LFLAGS) $(SOUNDLIB) -o pp
    endif
 endif
+
+melpe_enc: melpe_enc.c crp.o melpe/libmelpe.a vad/libvad.a
+	$(CC) $(CFLAGS) melpe_enc.c crp.o melpe/libmelpe.a fec/libfec.a vad/libvad.a crypto/libcrypto.a  -lm -o melpe_enc
+
+melpe_dec: melpe_dec.c crp.o melpe/libmelpe.a vad/libvad.a
+	$(CC) $(CFLAGS) melpe_dec.c crp.o melpe/libmelpe.a fec/libfec.a vad/libvad.a crypto/libcrypto.a  -lm -o melpe_dec
+
 
 
 #	Compression and encryption libraries.  Each of these creates
@@ -99,6 +106,5 @@ clean:
 	rm -f core *.out *.o *.bak $(PROGRAMS) *.shar *.exe *.a
 	@for I in $(DIRS); \
 	  do (cd $$I; echo "==>Entering directory `pwd`"; $(MAKE) $@ || exit 1); done
-	
 
 # DO NOT DELETE
