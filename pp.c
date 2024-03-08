@@ -27,30 +27,30 @@
 //---------------------------------------------------------------------------
 #ifdef _WIN32
 
- #include <stdlib.h>
- #include <stdio.h>
- #include <stddef.h>
- #include <basetsd.h>
- #include <stdint.h>
- #include <windows.h>
- #include <time.h>
- #include <conio.h>
- #include <string.h>
- #include "memory.h"
- #include "math.h"
-  
- #else //linux
- 
- #include <stdlib.h>
- #include <stdio.h>
- #include <string.h>
- #include <time.h>
- #include "memory.h"
- #include "math.h"
- 
- #include <sys/time.h>
- 
- #endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <basetsd.h>
+#include <stdint.h>
+#include <windows.h>
+#include <time.h>
+#include <conio.h>
+#include <string.h>
+#include "memory.h"
+#include "math.h"
+
+#else //linux
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include "memory.h"
+#include "math.h"
+
+#include <sys/time.h>
+
+#endif
 
 #include "audio/audio.h"  //low-level alsa/wave audio 
 #include "crypto/libcrp.h" //cryptography primitives 
@@ -58,34 +58,37 @@
 #include "crp.h" //key agreement, authentication, encryption/decryption, frame synchronization
 #include "ctr.h" //scan keyboard, processing. Suspending thread if no job (CTR)
 #include "rx.h"  //receiving baseband, demodulating, decrypting, decompressing, playing over earphones
-#include "tx.h"	 //recording voice from mike, compressing, encrypting, modulating, sending baseband into line
+#include "tx.h"     //recording voice from mike, compressing, encrypting, modulating, sending baseband into line
 
-int main(int argc, char* argv[])
-{
- int i=0;
-    
- printf("---------------------------------------------------------------\r\n");
- printf("   PairPhone v0.1a  Van Gegel, 2016  MailTo: torfone@ukr.net\r\n");
- printf("     P2P private talk over GSM-FR compressed voice channel\r\n");  
- printf("---------------------------------------------------------------\r\n");
-   
-   randInit(0,0); //init SPRNG
-   if(audio_init()) return -1;  //init audio
-   tty_rawmode(); //init console IO
-   HangUp(); //set idle mode
-   
-   //main loop 
-   do
-   {
-    i=rx(i);   //receiving
-    i=tx(i);   //transmitting
-    i=ctr(1);  //controlling
-   }
-   while(i);
-   
-   tty_normode(); //restore console
-   audio_fin(); //close audio
-   return 0;
+int main(int argc, char *argv[]) {
+    int i = 0;
+
+    printf("---------------------------------------------------------------\r\n");
+    printf("   PairPhone v0.1a  Van Gegel, 2016  MailTo: torfone@ukr.net\r\n");
+    printf("     P2P private talk over GSM-FR compressed voice channel\r\n");
+    printf("---------------------------------------------------------------\r\n");
+
+    randInit(0, 0); //init SPRNG
+    if (audio_init()) return -1;  //init audio
+    tty_rawmode(); //init console IO
+    HangUp(); //set idle mode
+
+    int iii = 0;
+    //main loop
+    do {
+        i = rx(i);   //receiving
+        i = tx(i);   //transmitting
+        i = ctr(1);  //controlling
+        if (iii % 100000 == 0) {
+
+            printf("\n\ni is: %d     Count: %d\n\n", i, iii);
+        }
+        iii++;
+    } while (i);
+
+    tty_normode(); //restore console
+    audio_fin(); //close audio
+    return 0;
 }
 //---------------------------------------------------------------------------
 
