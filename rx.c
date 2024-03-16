@@ -69,6 +69,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 // Global variable for the UDP socket
 int udp_sock = -1;
@@ -93,6 +94,18 @@ int init_udp_socket(int port) {
     if (bind(udp_sock, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("bind failed");
         return -1;
+    }
+
+
+    // Assume sockfd is your socket descriptor
+    int flags = fcntl(udp_sock, F_GETFL, 0);
+    if (flags == -1) {
+        // handle error
+    }
+
+    flags |= O_NONBLOCK;
+    if (fcntl(udp_sock, F_SETFL, flags) == -1) {
+        // handle error
     }
 
     return 0;
@@ -199,7 +212,7 @@ int rx(int typing) {
     // Receive UDP packet
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
-    unsigned char udpPacket[50]; //GSM frame is 33, 50 should be enough
+    unsigned char udpPacket[200]; //GSM frame is 33, but looks like some size at 40, 200 should be enough
 
 
     //input: -1 for no typing chars, 1 - exist some chars in input buffer
@@ -231,11 +244,12 @@ int rx(int typing) {
         i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
         if (i < 0) {
             perror("recvfrom failed");
-            return -1;
+            // good with not recv anything
         }
 
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
+            printf("received %d bytes from UDP listener\n", i);
             cnt += i;  //add grabbed  samples to account
             job += 4;  //set job
         }
