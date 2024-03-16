@@ -26,19 +26,6 @@
 //-scan keyboard, processing. Suspending thread if no job (CTR)
 //---------------------------------------------------------------------------
 #ifdef _WIN32
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <basetsd.h>
-#include <stdint.h>
-#include <windows.h>
-#include <time.h>
-#include <conio.h>
-#include <string.h>
-#include "memory.h"
-#include "math.h"
-
 #else //linux
 
 #include <stdlib.h>
@@ -60,7 +47,34 @@
 #include "rx.h"  //receiving baseband, demodulating, decrypting, decompressing, playing over earphones
 #include "tx.h"     //recording voice from mike, compressing, encrypting, modulating, sending baseband into line
 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define SERVER_PORT 12345 // The port number of the server
+#define SERVER_IP "192.168.2.3" // The IP address of the server
+
 int main(int argc, char *argv[]) {
+    int sock;
+    struct sockaddr_in server_addr;
+
+    // Create and configure the socket for UDP
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
     int i = 0;
 
     printf("---------------------------------------------------------------\r\n");
@@ -77,7 +91,7 @@ int main(int argc, char *argv[]) {
     //main loop
     do {
         i = rx(i);   //receiving
-        i = tx(i);   //transmitting
+        i = tx(i, sock, server_addr);   //transmitting
 
         // TODO jack: This is a debug print statement. It should be removed.
         if (iii % 100000 == 0) {
@@ -87,6 +101,9 @@ int main(int argc, char *argv[]) {
 
         i = ctr(1);  //controlling
     } while (i);
+
+    // Close the socket
+    close(sock);
 
     tty_normode(); //restore console
     audio_fin(); //close audio

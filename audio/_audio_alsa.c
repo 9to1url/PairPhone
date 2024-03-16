@@ -594,6 +594,7 @@ int _soundplay(int len, unsigned char *buf)
 	 * in this case */
 	
 		rc = snd_pcm_writei(pcm_handle, buf, len);
+//    printf("playback: rc= %d    len= %d\n", rc, len);
 	
 		
 		if (rc == -EAGAIN || (rc >= 0 && rc < len)) {

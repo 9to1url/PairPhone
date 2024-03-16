@@ -52,6 +52,13 @@
 #include "crp.h"          //data processing
 #include "tx.h"           //this
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
 int hasWrittenSamplesToFile = 0; // Flag to check if samples have been written to file
 
@@ -78,6 +85,8 @@ static short l__jit_buf = 0; //number of unplayed samples in the buffer
 static float _fdelay = 24000; //average recording delay
 static int tgrab = 0; //difference between pointers of recording and playing streams
 
+
+int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr);
 
 //*****************************************************************************
 //----------------Streaming resampler--------------------------------------------
@@ -109,14 +118,16 @@ static int _resample(short *src, short *dest, int srclen, int rate) {
 
 //*****************************************************************************
 //--Playing over Speaker----------------------------------
-static int _playjit(void) {
+static int _playjit(int sock, struct sockaddr_in server_addr) {
     //periodically try to play 8KHz samples in buffer over Speaker
     int i = 0;
     int job = 0;
 
     if (l__jit_buf) //we have unplayed samples, try to play
     {
-        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
+//        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
+        // instead of play the sound I want to send the samples to network
+        i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
         if (i) job += 2; //set job
         if ((i < 0) || (i > l__jit_buf)) i = 0; //must play again if underrun (PTT mode etc.)
         l__jit_buf -= i; //decrease number of unplayed samples
@@ -134,11 +145,12 @@ static int _playjit(void) {
 //transmition loop: grab 8KHz speech samples from Mike,
 //resample, collect frame (540 in 67.5 mS), encode
 //encrypt, modulate, play 48KHz baseband signal into Line
-int tx(int job) {
+int tx(int job, int sock, struct sockaddr_in server_addr) {
     int i, j;
 
     //loop 1: try to play unplayed samples
-    job += _playjit(); //the first try to play a tail of samples in buffer
+    job += _playjit(sock, server_addr); //the first try to play a tail of samples in buffer
+
 
     //loop 2: try to grab next 180 samples
     //check for number of grabbed samples
@@ -226,7 +238,7 @@ int tx(int job) {
         }
 
         txbuf[11] = 0; //clear tx buffer (processed)
-        _playjit();  //immediately play baseband into Line
+        _playjit(sock, server_addr);  //immediately play baseband into Line
 
         //estimate rate changing for grabbed samples for synchronizing grabbing and playing
         _fdelay *= 0.99; //smooth coefficient
@@ -239,4 +251,22 @@ int tx(int job) {
     return job;
 }
 
+#define SERVER_PORT 12345 // The port number of the server
+#define SERVER_IP "192.168.2.3" // The IP address of the server
 
+int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr) {
+
+
+    // Send the samples to the network
+    // Send the byte array via UDP
+    if (sendto(sock, pInt, buf * sizeof(short), 0,
+               (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+        perror("Send failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Sending %d samples to network\n", buf);
+
+    return buf;
+}
