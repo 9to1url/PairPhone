@@ -63,6 +63,7 @@
 #include "gsm.h"
 
 int hasWrittenSamplesToFile = 0; // Flag to check if samples have been written to file
+int hasGSMEncodedSent = 0; // Flag to check if GSM encoded data has been sent
 
 
 vadState2 vad; //Voice Active Detector state
@@ -300,7 +301,10 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
         // Encode the data
         gsm_encode(g, src, frame);
 
-        printf("GSM Encoded data sent: %d\n", strlen(frame));
+        if (hasGSMEncodedSent % 100000 == 0) {
+            printf("GSM Encoded data sent every 100000: %d\n", strlen(frame));
+        }
+        hasGSMEncodedSent++;
         // Send the encoded data
         if (sendto(sock, (const char *)frame, strlen(frame),
                    MSG_CONFIRM, (const struct sockaddr *) &server_addr,

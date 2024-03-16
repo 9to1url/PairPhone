@@ -71,6 +71,8 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 
+int hasReceiveError = 0;
+
 // Global variable for the UDP socket
 int udp_sock = -1;
 
@@ -243,7 +245,10 @@ int rx(int typing) {
 
         i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
         if (i < 0) {
-            perror("recvfrom failed");
+            hasReceiveError++;
+            if (hasReceiveError % 100000 == 0) {
+                perror("recvfrom failed in every 100000th iteration");
+            }
             // good with not recv anything
         }
 
