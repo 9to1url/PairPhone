@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
     do {
         i = rx(i);   //receiving
         i = tx(i);   //transmitting
-<<<<<<< HEAD
 
         // TODO jack: This is a debug print statement. It should be removed.
         if (iii % 100000 == 0) {
@@ -87,14 +86,6 @@ int main(int argc, char *argv[]) {
         iii++;
 
         i = ctr(1);  //controlling
-=======
-        i = ctr(1);  //controlling
-        if (iii % 100000 == 0) {
-
-            printf("\n\ni is: %d     Count: %d\n\n", i, iii);
-        }
-        iii++;
->>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
     } while (i);
 
     tty_normode(); //restore console

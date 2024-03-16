@@ -57,19 +57,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-<<<<<<< HEAD
-=======
-#include <windows.h>
-#include <time.h>
-
-#else
-
-#include <time.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
->>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 #endif
 
 
@@ -107,109 +94,6 @@ static float fau = 0;  //Average authentication level
 static int resample(short *src, short *dest, float fstep); //resumpling before playing
 static int playjit(void); //playing buffered samples
 
-<<<<<<< HEAD
-=======
-////////////////////////////////////////////////////////////////////////////
-//for TEST
-//**********************************************************
-int rxbit = 0;
-int rxerr = 0;
-static float verrs = 0;
-//bits set lookup table
-static const unsigned char BitsSetTable256[256] =
-        {
-#   define B2(n) n,     n+1,     n+1,     n+2
-#   define B4(n) B2(n), B2(n+1), B2(n+1), B2(n+2)
-#   define B6(n) B4(n), B4(n+1), B4(n+1), B4(n+2)
-                B6(0), B6(1), B6(1), B6(2)
-        };
-
-//emulation of encoder for test
-void melpe_s_emu(short *ssp, unsigned char *sbuf) {
-    int i = 0;
-    int j = 0;
-    float fi;
-
-    for (i = 0; i < 10; i++) j += BitsSetTable256[sbuf[i]];
-    verrs *= 0.9;
-    verrs += j;
-    rxbit += 80;
-    rxerr += j;
-
-    for (i = 0; i < 540; i++) {
-        fi = i;
-        fi = sin(2 * M_PI * fi / 9);
-        ssp[i] = (short) (4000 * fi);
-    }
-
-}
-
-//Change samples rate (from PGPFone)
-int RateChange(short *src, short *dest, int srcLen, int srcRate, int destRate) {
-    //int srcRate = 8000;
-    short *sourceShortPtr;
-    short *destShortPtr;
-    float nSrcRate, nDestRate;
-    nSrcRate = srcRate;
-    nDestRate = destRate;
-
-    // All samples are 16 bit signed values. Pass in the number of source samples,
-    // the sample rate of the source data, and the required destination sample
-    // rate.
-    if (!srcLen)
-        return 0;
-    // If the sample rates are identical, just copy the data over
-    if (srcRate == destRate) {
-        memcpy((char *) dest, (char *) src, srcLen * 2);
-        return srcLen;
-    }
-    sourceShortPtr = src;
-    destShortPtr = dest;
-
-    // Downsample
-    if (srcRate > destRate) {
-        float destStep = nDestRate / nSrcRate;
-        float position = 0;
-
-        while (srcLen) {
-            int destSample = 0;
-            int count = 0;
-
-            // Accumulate source samples, until the fractional destination position
-            // crosses a boundary (or we run out of source data)
-            while (srcLen && (position < 1.0)) {
-                destSample += *sourceShortPtr++;
-                srcLen--;
-                position += destStep;
-                count++;
-            }
-            position = position - 1.0;
-            *destShortPtr++ = (destSample / count);
-        }
-    } else // Upsample
-    {
-        float sourceStep = nSrcRate / nDestRate;
-        float position = 0;
-
-        while (--srcLen) {
-            int leftSample = *sourceShortPtr++;
-            int sampleDifference = *sourceShortPtr - leftSample;
-
-            while (position < 1.0) {
-                *destShortPtr++ = leftSample + ((float) sampleDifference * position);
-                position += sourceStep;
-            }
-            position = position - 1.0;
-        }
-    }
-    // Return the number of samples written
-    // Note that this code will sometimes (often?) write one sample too many, so make
-    // sure your destination buffer is oversized by one.
-    return destShortPtr - dest;
-}
-//End of test area
-////////////////////////////////////////////////////////////////////////////
->>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 
 
 //*****************************************************************************
