@@ -45,6 +45,8 @@
 #include <string.h>
 
 #ifdef _WIN32
+<<<<<<< HEAD
+=======
 #include <stddef.h>
 #include <stdlib.h>
 #include <basetsd.h>
@@ -52,6 +54,7 @@
 #include <windows.h>
 #include <time.h>
 #include <conio.h>
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 #else //Linux
 
 #include <time.h>
@@ -1414,6 +1417,10 @@ int AddContact(char *name) {
         printf("\r\nError! Collision: zeroed ID, pairing impossible\r\n");
         return -7;
     }
+<<<<<<< HEAD
+    // TODO jack, this fuction is the first to negotiate the key
+=======
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
     //our_private_cert = H(dkey||ekey)
     Sponge_init(&cspng, 0, 0, 0, 0);
     Sponge_data(&cspng, skey, 16, 0, SP_NORMAL);
@@ -1454,6 +1461,8 @@ void HangUp(void) {
     ResetCT(0); //reset crypto
     lastid = 0;   //clear last id of originatr's outgoing contact sets side as an acceptor
 }
+<<<<<<< HEAD
+=======
 
 
 
@@ -1466,4 +1475,5 @@ void HangUp(void) {
 
 
 
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 

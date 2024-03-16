@@ -50,12 +50,15 @@
 #include <string.h>
 
 #ifdef _WIN32
+#else
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <basetsd.h>
-#include <stdint.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
+<<<<<<< HEAD
+=======
 #include <windows.h>
 #include <time.h>
 
@@ -66,6 +69,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 #endif
 
 
@@ -103,6 +107,8 @@ static float fau = 0;  //Average authentication level
 static int resample(short *src, short *dest, float fstep); //resumpling before playing
 static int playjit(void); //playing buffered samples
 
+<<<<<<< HEAD
+=======
 ////////////////////////////////////////////////////////////////////////////
 //for TEST
 //**********************************************************
@@ -203,6 +209,7 @@ int RateChange(short *src, short *dest, int srcLen, int srcRate, int destRate) {
 }
 //End of test area
 ////////////////////////////////////////////////////////////////////////////
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 
 
 //*****************************************************************************
@@ -411,10 +418,3 @@ void audio_fin(void) {
     _soundterm();
     soundterm();
 }
-
-
-
-
-
-
-

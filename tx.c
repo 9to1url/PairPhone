@@ -34,12 +34,15 @@
 #include <string.h>
 
 #ifdef _WIN32
+#else
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <basetsd.h>
-#include <stdint.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
+<<<<<<< HEAD
+=======
 #include <windows.h>
 #include <time.h>
 
@@ -50,6 +53,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
 #endif
 
 
@@ -222,7 +226,11 @@ int tx(int job) {
         MakePkt(txbuf); //encrypt voice or get actual control packet
         l__jit_buf = Modulate(txbuf, _jit_buf); //modulate block
 
+<<<<<<< HEAD
+        // TODO jack, Add the modified file writing code with flag check here
+=======
         // Add the modified file writing code with flag check here
+>>>>>>> 9e0ce8977c2abb48a651e51f6262b4b19d8455e7
         if (!hasWrittenSamplesToFile) {
             FILE *fp = fopen("modulated_samples.raw", "wb");
             if (fp != NULL) {

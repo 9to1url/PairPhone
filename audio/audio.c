@@ -21,13 +21,7 @@
 
 
 #ifdef _WIN32 
- #include <stddef.h>
- #include <stdlib.h>
- #include <basetsd.h>
- #include <stdint.h>
- //#include <fixedint.h>
- #include "audio_wave.c"
- #include "_audio_wave.c"
+
 #else
  #include "audio_alsa.c"
  #include "_audio_alsa.c"

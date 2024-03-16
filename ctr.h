@@ -3,49 +3,6 @@
 // KEY codes and ESC-sequences for Windows and Linux
 #ifdef _WIN32
 
-#define KEY_INS 1
-#define KEY_DEL 2
-#define KEY_BREAK 127
-#define KEY_UP 4
-#define KEY_DOWN 5
-#define KEY_RIGHT 6
-#define KEY_LEFT 7
-#define KEY_STAB 3
-#define KEY_TAB 9
-#define KEY_ENTER 13
-#define KEY_ESC 27
-#define KEY_BACK 8
-
-#define KEY_F1 16
-#define KEY_F2 17
-#define KEY_F3 18
-#define KEY_F4 19
-#define KEY_F5 20
-#define KEY_F6 21
-#define KEY_F7 22
-#define KEY_F8 23
-#define KEY_F9 24
-#define KEY_F10 25
-
-
-#define EKEY_UP 0x00001B48
-#define EKEY_DOWN 0x00001B50
-#define EKEY_RIGHT 0x00001B4D
-#define EKEY_LEFT 0x00001B4B
-#define EKEY_STAB 0x00001B94
-#define EKEY_INS 0x00001B52
-#define EKEY_DEL 0x00001B53
-
-#define EKEY_F1 0x00001B3B
-#define EKEY_F2 0x00001B3C
-#define EKEY_F3 0x00001B3D
-#define EKEY_F4 0x00001B3E
-#define EKEY_F5 0x00001B3F
-#define EKEY_F6 0x00001B40
-#define EKEY_F7 0x00001B41
-#define EKEY_F8 0x00001B42
-#define EKEY_F9 0x00001B43
-#define EKEY_F10 0x00001B44
 
 #else //Linux
 
