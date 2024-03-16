@@ -13,6 +13,10 @@ CCFLAGS =  -DAUDIO_BLOCKING -DLINUX -DM_LITTLE_ENDIAN -DNEEDED_LINEAR -DLINUX_DS
 CC = gcc -Wall # for GNU's gcc compiler
 CELPFLAGS = -fomit-frame-pointer -ffast-math -funroll-loops
 LFLAGS = -lm
+
+LFLAGS += -lgsm
+LFLAGS += -L/usr/include/gsm
+
 CCFLAGS = -DLINUX_ALSA -DM_LITTLE_ENDIAN
 SOUNDLIB = -lasound
 

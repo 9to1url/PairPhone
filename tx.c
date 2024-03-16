@@ -60,6 +60,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include "gsm.h"
+
 int hasWrittenSamplesToFile = 0; // Flag to check if samples have been written to file
 
 
@@ -86,7 +88,7 @@ static float _fdelay = 24000; //average recording delay
 static int tgrab = 0; //difference between pointers of recording and playing streams
 
 
-int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr);
+int sendSamplesToNetwork(short pInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr);
 
 //*****************************************************************************
 //----------------Streaming resampler--------------------------------------------
@@ -254,19 +256,60 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
 #define SERVER_PORT 12345 // The port number of the server
 #define SERVER_IP "192.168.2.3" // The IP address of the server
 
-int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr) {
+//int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr) {
+//
+//
+//    // Send the samples to the network
+//    // Send the byte array via UDP
+//    if (sendto(sock, pInt, buf * sizeof(short), 0,
+//               (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+//        perror("Send failed");
+//        close(sock);
+//        exit(EXIT_FAILURE);
+//    }
+//
+//    printf("Sending %d samples to network\n", buf);
+//
+//    return buf;
+//}
 
+gsm g = NULL; // Global variable to hold the GSM state object
 
-    // Send the samples to the network
-    // Send the byte array via UDP
-    if (sendto(sock, pInt, buf * sizeof(short), 0,
-               (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
-        perror("Send failed");
-        close(sock);
-        exit(EXIT_FAILURE);
+const int kSamples = 160;
+
+int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
+    gsm_signal src[kSamples];
+    gsm_frame frame;
+
+    // Create gsm object if it doesn't exist
+    if (!g) {
+        g = gsm_create();
+        if (!g) {
+            printf("gsm_create failed\n");
+            return 0; // false in C
+        }
     }
 
-    printf("Sending %d samples to network\n", buf);
+    // Loop over pcmSampleArrayInt in chunks of kSamples
+    for (int i = 0; i < bufUsedSizeShort; i += kSamples) {
+        // Copy the data from pcmSampleArrayInt to src
+        for (int j = 0; j < kSamples; j++) {
+            src[j] = pcmSampleArrayInt[i + j];
+        }
 
-    return buf;
+        // Encode the data
+        gsm_encode(g, src, frame);
+
+        printf("GSM Encoded data sent: %d\n", strlen(frame));
+        // Send the encoded data
+        if (sendto(sock, (const char *)frame, strlen(frame),
+                   MSG_CONFIRM, (const struct sockaddr *) &server_addr,
+                   sizeof(server_addr)) < 0) {
+            perror("Send failed");
+            // close(sock); don't close, the main func will close it
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return bufUsedSizeShort;
 }
