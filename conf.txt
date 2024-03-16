@@ -1,14 +1,14 @@
 #headset
 NPP7=1
 AudioChunks=default
-AudioInput=plug:default
-AudioOutput=plug:default
+AudioInput=plughw:1,0
+AudioOutput=plughw:1,0
 
 #line
 _NPP7=1
 _AudioChunks=default
-_AudioInput=plughw:1,0
-_AudioOutput=plughw:1,0
+_AudioInput=plughw:0,0
+_AudioOutput=plughw:0,1
 
 
 

@@ -58,6 +58,7 @@
 
 #define SERVER_PORT 12345 // The port number of the server
 #define SERVER_IP "192.168.2.3" // The IP address of the server
+#define SERVER_IP "10.10.0.2" // The IP address of the server
 
 int main(int argc, char *argv[]) {
     int sock;
