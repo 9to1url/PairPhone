@@ -66,6 +66,41 @@
 #include "crp.h"          //data processing
 #include "rx.h"           //this
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+// Global variable for the UDP socket
+int udp_sock = -1;
+
+// Function to initialize the UDP socket
+int init_udp_socket(int port) {
+    struct sockaddr_in server_addr;
+
+    // Create socket
+    udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udp_sock < 0) {
+        perror("socket creation failed");
+        return -1;
+    }
+
+    // Bind the socket with the server address
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port);
+
+    if (bind(udp_sock, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("bind failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
+
 //Global variables
 
 //baseband processing
@@ -153,6 +188,20 @@ static int playjit(void) {
 //receiving loop: grab 48KHz baseband samples from Line,
 //demodulate, decrypt, decode, play 8KHz voice over Speaker
 int rx(int typing) {
+    // Check if the UDP socket is initialized
+    if (udp_sock < 0) {
+        if (init_udp_socket(12345) < 0) {  // Replace 12345 with your actual port number
+            printf("Failed to initialize UDP socket\n");
+            return -1;
+        }
+    }
+
+    // Receive UDP packet
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    unsigned char udpPacket[50]; //GSM frame is 33, 50 should be enough
+
+
     //input: -1 for no typing chars, 1 - exist some chars in input buffer
     //output: 0 - no any jobs doing, 1 - some jobs were doing
     int i;
@@ -177,7 +226,13 @@ int rx(int typing) {
             samples = speech; //set pointer to start of buffer
         }
         //record
-        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
+//        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
+
+        i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+        if (i < 0) {
+            perror("recvfrom failed");
+            return -1;
+        }
 
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
