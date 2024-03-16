@@ -72,6 +72,7 @@
 #include <fcntl.h>
 
 int hasReceiveError = 0;
+int hasReceiveUDP = 0;
 
 // Global variable for the UDP socket
 int udp_sock = -1;
@@ -254,7 +255,10 @@ int rx(int typing) {
 
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
-            printf("received %d bytes from UDP listener\n", i);
+            if (hasReceiveUDP % 100000 == 0) {
+                printf("received %d bytes from UDP listener every 100000\n", i);
+            }
+            hasReceiveUDP++;
             cnt += i;  //add grabbed  samples to account
             job += 4;  //set job
         }
