@@ -62,8 +62,32 @@
 
 #include "gsm.h"
 
+#include <time.h>
+#include <sys/time.h>
+
+const char* getCurrentDateTimeWithMillis() {
+    static char datetime[80]; // Increased buffer size for milliseconds
+    struct timeval tv;
+    struct tm* tm_now;
+
+    // Get current time with microseconds precision
+    gettimeofday(&tv, NULL);
+    tm_now = localtime(&tv.tv_sec); // Convert seconds part to tm struct
+
+    // Format the date and time, include milliseconds
+    int millis = tv.tv_usec / 1000; // Convert microseconds to milliseconds
+    strftime(datetime, sizeof(datetime) - 10, "%Y-%m-%d %H:%M:%S", tm_now); // Save space for milliseconds
+    sprintf(datetime + strlen(datetime), ".%03d", millis); // Append milliseconds
+
+    return datetime;
+}
+
+
+
 int hasWrittenSamplesToFile = 0; // Flag to check if samples have been written to file
-int hasGSMEncodedSent = 0; // Flag to check if GSM encoded data has been sent
+int hasGSMEncodedSent = 1; // Flag to check if GSM encoded data has been sent
+int chech_l__jit_buf_count = 1;
+int chech_l__jit_buf_count2 = 1;
 
 
 vadState2 vad; //Voice Active Detector state
@@ -119,21 +143,31 @@ static int _resample(short *src, short *dest, int srclen, int rate) {
     return dptr - dest;  //number of outputted samples
 }
 
+
 //*****************************************************************************
 //--Playing over Speaker----------------------------------
 static int _playjit(int sock, struct sockaddr_in server_addr) {
+    if (chech_l__jit_buf_count % 100001 == 0) {
+        printf("%s oooooooooo in every 100001 l__jit_buf: %d   counter: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf, chech_l__jit_buf_count);
+    }
+    chech_l__jit_buf_count++;
     //periodically try to play 8KHz samples in buffer over Speaker
     int i = 0;
     int job = 0;
 
     if (l__jit_buf) //we have unplayed samples, try to play
     {
-//        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
+        if (chech_l__jit_buf_count2 % 100001 == 0) {
+            printf("1111111111 in every 100001 l__jit_buf: %d\r\n", l__jit_buf);
+        }
+        chech_l__jit_buf_count2++;
+        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
         // instead of play the sound I want to send the samples to network
-        i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
+//        i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
         if (i) job += 2; //set job
         if ((i < 0) || (i > l__jit_buf)) i = 0; //must play again if underrun (PTT mode etc.)
         l__jit_buf -= i; //decrease number of unplayed samples
+        printf("%s 2222222222 check if l__jit_buf changed after _soundplay: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
         p__jit_buf += i; //move pointer to unplayed samples
         if (l__jit_buf <= 0) //all samples played
         {
@@ -227,6 +261,7 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
         if (l__jit_buf) return job; //we have some unplayed samples in local buffer, not play now.
         MakePkt(txbuf); //encrypt voice or get actual control packet
         l__jit_buf = Modulate(txbuf, _jit_buf); //modulate block
+        printf("%s 3333333333 check if l__jit_buf changed after modulate: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
 
         // TODO jack, Add the modified file writing code with flag check here
         if (!hasWrittenSamplesToFile) {
@@ -279,6 +314,7 @@ gsm g = NULL; // Global variable to hold the GSM state object
 const int kSamples = 160;
 
 int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
+    printf("l__jit_buf: %d\n", bufUsedSizeShort);
     gsm_signal src[kSamples];
     gsm_frame frame;
 
@@ -303,8 +339,9 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
     // Encode the data
     gsm_encode(g, src, frame);
 
-    if (hasGSMEncodedSent % 100000 == 0) {
-        printf("GSM Encoded data sent every 100000: %d\n", strlen(frame));
+    if (hasGSMEncodedSent % 100001 == 0) {
+        // TODO jack: get back this print
+//        printf("GSM Encoded data sent every 100001: %d\n", strlen(frame));
     }
     hasGSMEncodedSent++;
     // Send the encoded data
