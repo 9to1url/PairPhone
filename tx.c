@@ -298,21 +298,22 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
             src[j] = pcmSampleArrayInt[i + j];
         }
 
-        // Encode the data
-        gsm_encode(g, src, frame);
+    }
 
-        if (hasGSMEncodedSent % 100000 == 0) {
-            printf("GSM Encoded data sent every 100000: %d\n", strlen(frame));
-        }
-        hasGSMEncodedSent++;
-        // Send the encoded data
-        if (sendto(sock, (const char *)frame, strlen(frame),
-                   MSG_CONFIRM, (const struct sockaddr *) &server_addr,
-                   sizeof(server_addr)) < 0) {
-            perror("Send failed");
-            // close(sock); don't close, the main func will close it
-            exit(EXIT_FAILURE);
-        }
+    // Encode the data
+    gsm_encode(g, src, frame);
+
+    if (hasGSMEncodedSent % 100000 == 0) {
+        printf("GSM Encoded data sent every 100000: %d\n", strlen(frame));
+    }
+    hasGSMEncodedSent++;
+    // Send the encoded data
+    if (sendto(sock, (const char *)frame, strlen(frame),
+               MSG_CONFIRM, (const struct sockaddr *) &server_addr,
+               sizeof(server_addr)) < 0) {
+        perror("Send failed");
+        // close(sock); don't close, the main func will close it
+        exit(EXIT_FAILURE);
     }
 
     return bufUsedSizeShort;

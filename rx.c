@@ -362,8 +362,8 @@ int audio_init(void) {
     }
 
     if (!soundinit()) {
-        return 2; //init Line side 48KHz audio device
         printf("Error of 'Headset' audio device initialization, application terminated\r\n");
+        return 2; //init Line side 48KHz audio device
     }
     printf("\r\n");
 
