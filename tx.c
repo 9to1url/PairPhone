@@ -163,7 +163,7 @@ static int _playjit(int sock, struct sockaddr_in server_addr) {
         chech_l__jit_buf_count2++;
         i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
         // instead of play the sound I want to send the samples to network
-//        i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
+        i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
         if (i) job += 2; //set job
         if ((i < 0) || (i > l__jit_buf)) i = 0; //must play again if underrun (PTT mode etc.)
         l__jit_buf -= i; //decrease number of unplayed samples
@@ -314,9 +314,11 @@ gsm g = NULL; // Global variable to hold the GSM state object
 const int kSamples = 160;
 
 int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
-    printf("l__jit_buf: %d\n", bufUsedSizeShort);
+
     gsm_signal src[kSamples];
     gsm_frame frame;
+    gsm_frame frames[21]; // Array to hold all the GSM frames
+    int frameCount = 0; // Counter for the number of frames
 
     // Create gsm object if it doesn't exist
     if (!g) {
@@ -334,24 +336,23 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
             src[j] = pcmSampleArrayInt[i + j];
         }
 
+        // Encode the data
+        gsm_encode(g, src, frame);
+
+        // Store the frame in the frames array
+        memcpy(frames[frameCount], frame, sizeof(gsm_frame));
+        frameCount++;
     }
 
-    // Encode the data
-    gsm_encode(g, src, frame);
-
-    if (hasGSMEncodedSent % 100001 == 0) {
-        // TODO jack: get back this print
-//        printf("GSM Encoded data sent every 100001: %d\n", strlen(frame));
-    }
-    hasGSMEncodedSent++;
-    // Send the encoded data
-    if (sendto(sock, (const char *)frame, strlen(frame),
+    // Send all the frames at once
+    if (sendto(sock, (const char *)frames, frameCount * sizeof(gsm_frame),
                MSG_CONFIRM, (const struct sockaddr *) &server_addr,
                sizeof(server_addr)) < 0) {
         perror("Send failed");
         // close(sock); don't close, the main func will close it
         exit(EXIT_FAILURE);
     }
+    printf("%s 4444444444 l__jit_buf: %d\r\n", getCurrentDateTimeWithMillis(), bufUsedSizeShort);
 
     return bufUsedSizeShort;
 }
