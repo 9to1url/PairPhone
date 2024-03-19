@@ -65,6 +65,7 @@
 #include "melpe/melpe.h"  //audio codec
 #include "crp.h"          //data processing
 #include "rx.h"           //this
+#include "time_utils.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -215,7 +216,7 @@ int rx(int typing) {
     // Receive UDP packet
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
-    unsigned char udpPacket[200]; //GSM frame is 33, but looks like some size at 40, 200 should be enough
+    unsigned char udpPacket[33 * 21]; //GSM frame is 33, but looks like some size at 40, 200 should be enough
 
 
     //input: -1 for no typing chars, 1 - exist some chars in input buffer
@@ -242,22 +243,25 @@ int rx(int typing) {
             samples = speech; //set pointer to start of buffer
         }
         //record
-//        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
+        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
 
         i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
         if (i < 0) {
             hasReceiveError++;
             if (hasReceiveError % 100001 == 0) {
                 // TODO jack: bring back
-//                perror("recvfrom failed in every 100001th iteration");
+                printf("%s recvfrom failed in every 100001th iteration\r\n", getCurrentDateTimeWithMillis());
             }
             // good with not recv anything
         }
 
+        if ( i != -1) {
+            printf("%s 5555555555 check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
+        }
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
             if (hasReceiveUDP % 100000 == 0) {
-                printf("received %d bytes from UDP listener every 100000\n", i);
+                printf("%s ^^^^^^^^^^ check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
             }
             hasReceiveUDP++;
             cnt += i;  //add grabbed  samples to account

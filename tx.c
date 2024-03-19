@@ -65,6 +65,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "time_utils.h"
+
 const char* getCurrentDateTimeWithMillis() {
     static char datetime[80]; // Increased buffer size for milliseconds
     struct timeval tv;
@@ -167,7 +169,7 @@ static int _playjit(int sock, struct sockaddr_in server_addr) {
         if (i) job += 2; //set job
         if ((i < 0) || (i > l__jit_buf)) i = 0; //must play again if underrun (PTT mode etc.)
         l__jit_buf -= i; //decrease number of unplayed samples
-        printf("%s 2222222222 check if l__jit_buf changed after _soundplay: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
+//        printf("%s 2222222222 check if l__jit_buf changed after _soundplay: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
         p__jit_buf += i; //move pointer to unplayed samples
         if (l__jit_buf <= 0) //all samples played
         {
@@ -261,7 +263,7 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
         if (l__jit_buf) return job; //we have some unplayed samples in local buffer, not play now.
         MakePkt(txbuf); //encrypt voice or get actual control packet
         l__jit_buf = Modulate(txbuf, _jit_buf); //modulate block
-        printf("%s 3333333333 check if l__jit_buf changed after modulate: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
+//        printf("%s 3333333333 check if l__jit_buf changed after modulate: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
 
         // TODO jack, Add the modified file writing code with flag check here
         if (!hasWrittenSamplesToFile) {
@@ -352,7 +354,7 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
         // close(sock); don't close, the main func will close it
         exit(EXIT_FAILURE);
     }
-    printf("%s 4444444444 l__jit_buf: %d\r\n", getCurrentDateTimeWithMillis(), bufUsedSizeShort);
+//    printf("%s 4444444444 l__jit_buf: %d\r\n", getCurrentDateTimeWithMillis(), bufUsedSizeShort);
 
     return bufUsedSizeShort;
 }
