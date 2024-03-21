@@ -54,7 +54,7 @@ static char playback_mixer_elem[32];
 static int snd_rate = SAMPLE_RATE;
 static int snd_format = SND_PCM_FORMAT_S16_LE;// SND_PCM_FORMAT_MU_LAW;
 static int snd_channels = 1;
-static int verbose = 0;		/* DEBUG! */
+static int verbose = 0;		/* DEBUG! */ // TODO jack: change back to 0
 static int quiet_mode = 0;	/* Show info when suspending.  Not relevant as
 				   this application doesn't suspend. */
 

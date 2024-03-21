@@ -150,7 +150,7 @@ static int _resample(short *src, short *dest, int srclen, int rate) {
 //--Playing over Speaker----------------------------------
 static int _playjit(int sock, struct sockaddr_in server_addr) {
     if (chech_l__jit_buf_count % 100001 == 0) {
-        printf("%s oooooooooo in every 100001 l__jit_buf: %d   counter: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf, chech_l__jit_buf_count);
+//        printf("%s aaaaaaaaaa in every 100001 l__jit_buf: %d   counter: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf, chech_l__jit_buf_count);
     }
     chech_l__jit_buf_count++;
     //periodically try to play 8KHz samples in buffer over Speaker
@@ -159,11 +159,13 @@ static int _playjit(int sock, struct sockaddr_in server_addr) {
 
     if (l__jit_buf) //we have unplayed samples, try to play
     {
+        // FIXME jack, put 45ms delay here, and comment out the _soundplay
+//        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
+        usleep(45 * 1000); // delay for 45ms
         if (chech_l__jit_buf_count2 % 100001 == 0) {
-            printf("1111111111 in every 100001 l__jit_buf: %d\r\n", l__jit_buf);
+            printf("1111111111 in every 100001 l__jit_buf: %d and i: %d\r\n", l__jit_buf, i);
         }
         chech_l__jit_buf_count2++;
-        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
         // instead of play the sound I want to send the samples to network
         i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
         if (i) job += 2; //set job
@@ -212,6 +214,7 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
             if (j > 9000) j = 9000; //restrict resulting samplerate
             if (j < 7000) j = 7000;
 
+//            printf("%s 7777777777 sample number %d and sample rate: %d\r\n", getCurrentDateTimeWithMillis(), i, j);
             //change rate of grabbed samples for synchronizing grabbing and playing loops
             i = _resample(spraw, spbuf + spcnt, i, j); //resample and collect speech samples
             spcnt += i; //the number of samples in buffer for processing
@@ -262,6 +265,7 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
     if (i < 720 * 6) {
         if (l__jit_buf) return job; //we have some unplayed samples in local buffer, not play now.
         MakePkt(txbuf); //encrypt voice or get actual control packet
+        // TODO jack, modulate encrypted txbuf to _jit_buf
         l__jit_buf = Modulate(txbuf, _jit_buf); //modulate block
 //        printf("%s 3333333333 check if l__jit_buf changed after modulate: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
 
@@ -294,22 +298,6 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
 #define SERVER_PORT 12345 // The port number of the server
 #define SERVER_IP "192.168.2.3" // The IP address of the server
 
-//int sendSamplesToNetwork(short pInt[3240], short buf, int sock, struct sockaddr_in server_addr) {
-//
-//
-//    // Send the samples to the network
-//    // Send the byte array via UDP
-//    if (sendto(sock, pInt, buf * sizeof(short), 0,
-//               (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
-//        perror("Send failed");
-//        close(sock);
-//        exit(EXIT_FAILURE);
-//    }
-//
-//    printf("Sending %d samples to network\n", buf);
-//
-//    return buf;
-//}
 
 gsm g = NULL; // Global variable to hold the GSM state object
 

@@ -33,6 +33,9 @@
 #include <sys/time.h>
 #include "_audio_alsa.h"
 //#include "cntrls.h"
+#include "../time_utils.h"
+
+
 #define _DEFCONF "conf.txt"  //configuration filename
 #define _SAMPLE_RATE 	48000
 #define _DEFBUFSIZE 6400
@@ -54,7 +57,7 @@ static char _playback_mixer_elem[32];
 static int _snd_rate = _SAMPLE_RATE;
 static int _snd_format = SND_PCM_FORMAT_S16_LE;// SND_PCM_FORMAT_MU_LAW;
 static int _snd_channels = 1;
-static int _verbose = 0;		/* DEBUG! */
+static int _verbose = 0;		/* DEBUG! */ // TODO jack, change back to 0
 static int _quiet_mode = 0;	/* Show info when _suspending.  Not relevant as
 				   this application doesn't _suspend. */
 
@@ -588,14 +591,17 @@ static void _suspend(void)
  */
 int _soundplay(int len, unsigned char *buf)
 {
+//    printf("%s bbbbbbbbbb playback: len= %d\r\n",  getCurrentDateTimeWithMillis(), len);
 	int rc;
     snd_pcm_t *pcm_handle=_pcm_handle_out;
 	/* the function expects the number of frames, which is equal to bytes
 	 * in this case */
 	
 		rc = snd_pcm_writei(pcm_handle, buf, len);
-//    printf("playback: rc= %d    len= %d\n", rc, len);
-	
+        if (rc != 3240) {
+            printf("%s cccccccccc playback: rc= %d    len= %d\r\n", getCurrentDateTimeWithMillis(), rc, len);
+        }
+
 		
 		if (rc == -EAGAIN || (rc >= 0 && rc < len)) {
 			fprintf(stderr, "Playback uncompleet: %d form %d\n", rc, len);

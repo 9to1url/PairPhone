@@ -65,15 +65,19 @@
 #include "melpe/melpe.h"  //audio codec
 #include "crp.h"          //data processing
 #include "rx.h"           //this
+#include "gsm.h" // Include the GSM library
 #include "time_utils.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <unistd.h>
+void decode_gsm_data(unsigned char *udpPacket, int packetSize);
+
 
 int hasReceiveError = 1;
-int hasReceiveUDP = 0;
+int hasReceiveUDP = 1;
 
 // Global variable for the UDP socket
 int udp_sock = -1;
@@ -219,6 +223,7 @@ int rx(int typing) {
     unsigned char udpPacket[33 * 21]; //GSM frame is 33, but looks like some size at 40, 200 should be enough
 
 
+
     //input: -1 for no typing chars, 1 - exist some chars in input buffer
     //output: 0 - no any jobs doing, 1 - some jobs were doing
     int i;
@@ -242,25 +247,37 @@ int rx(int typing) {
             for (i = 0; i < cnt; i++) speech[i] = samples[i]; //move tail to start of buffer
             samples = speech; //set pointer to start of buffer
         }
+
+        // TODO jack, add 22.5ms delay
+        usleep(22.5 * 1000); // delay for 45ms
         //record
-        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
+//        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
 
         i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+        printf("%s zzzzzzzzzz check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
+        int i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+        if (i < 0) {
+            // handle error
+        } else if (i > 0) {
+            // Decode the received GSM data
+            decode_gsm_data(udpPacket, i);
+        }
+
         if (i < 0) {
             hasReceiveError++;
             if (hasReceiveError % 100001 == 0) {
                 // TODO jack: bring back
-                printf("%s recvfrom failed in every 100001th iteration\r\n", getCurrentDateTimeWithMillis());
+//                printf("%s 999999999 recvfrom nothing in non-blocking as -1 in every 100001th iteration as %d\r\n", getCurrentDateTimeWithMillis(), hasReceiveError);
             }
             // good with not recv anything
         }
 
         if ( i != -1) {
-            printf("%s 5555555555 check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
+//            printf("%s 5555555555 check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
         }
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
-            if (hasReceiveUDP % 100000 == 0) {
+            if (hasReceiveUDP % 100001 == 0) {
                 printf("%s ^^^^^^^^^^ check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
             }
             hasReceiveUDP++;
@@ -270,6 +287,7 @@ int rx(int typing) {
     } else //we have enough samples for processing
     {
         i = Demodulate(samples, buf); //process samples: 36*6 (35-37)*6 samples
+//        printf("%s 6666666666 demodulate samples: %d\r\n", getCurrentDateTimeWithMillis(), i);
         samples += i; //move pointer to next samples (with frequency adjusting)
         cnt -= i; //decrease the number of unprocessed samples
         if (0x80 & buf[11]) //checks flag for output data block is ready
@@ -384,4 +402,40 @@ int audio_init(void) {
 void audio_fin(void) {
     _soundterm();
     soundterm();
+}
+
+
+// Global variable to hold the GSM state object
+gsm g_rx = NULL;
+
+const int kSamples_rx = 160;
+
+// Function to decode GSM data
+void decode_gsm_data(unsigned char *udpPacket, int packetSize) {
+    gsm_signal dst[kSamples_rx];
+    gsm_frame frame;
+
+    // Create gsm object if it doesn't exist
+    if (!g_rx) {
+        g_rx = gsm_create();
+        if (!g_rx) {
+            printf("gsm_create failed\n");
+            return;
+        }
+    }
+
+    // Loop over udpPacket in chunks of gsm_frame
+    for (int i = 0; i < packetSize; i += sizeof(gsm_frame)) {
+        // Copy the data from udpPacket to frame
+        memcpy(frame, udpPacket + i, sizeof(gsm_frame));
+
+        // Decode the data
+        gsm_decode(g_rx, frame, dst);
+
+        // Add the decoded data to the samples buffer
+        for (int j = 0; j < kSamples_rx; j++) {
+            samples[cnt + j] = dst[j];
+        }
+        cnt += kSamples_rx;
+    }
 }
