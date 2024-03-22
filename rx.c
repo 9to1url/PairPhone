@@ -67,6 +67,7 @@
 #include "rx.h"           //this
 #include "gsm.h" // Include the GSM library
 #include "time_utils.h"
+#include "wgsm.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -409,18 +410,18 @@ void audio_fin(void) {
 
 // Global variable to hold the GSM state object
 
-const int kSamples_rx = 160;
+gsm global_gsm_state_4decode = NULL; // Global gsm object
 
 // Function to decode GSM data
 void decode_gsm_data(unsigned char *udpPacket, int packetSize) {
-    gsm_signal dst[kSamples_rx];
+    gsm_signal dst[kSamples];
     gsm_frame frame;
 
     printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 1 \r\n", getCurrentDateTimeWithMillis());
     // Create gsm object if it doesn't exist
-    if (!global_gsm_state) {
-        global_gsm_state = gsm_create();
-        if (!global_gsm_state) {
+    if (!global_gsm_state_4decode) {
+        global_gsm_state_4decode = gsm_create();
+        if (!global_gsm_state_4decode) {
             printf("gsm_create failed\n");
             return;
         }
@@ -434,13 +435,13 @@ void decode_gsm_data(unsigned char *udpPacket, int packetSize) {
 
         printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 3 %lu %lu \r\n", getCurrentDateTimeWithMillis(), sizeof frame, sizeof dst);
         // Decode the data
-        gsm_decode(global_gsm_state, frame, dst);// FIXME jack, crash here
+        DecodeFrame(global_gsm_state_4decode, frame, dst);
 
         printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 4 \r\n", getCurrentDateTimeWithMillis());
         // Add the decoded data to the samples buffer
-        for (int j = 0; j < kSamples_rx; j++) {
+        for (int j = 0; j < kSamples; j++) {
             samples[cnt + j] = dst[j];
         }
-        cnt += kSamples_rx;
+        cnt += kSamples;
     }
 }
