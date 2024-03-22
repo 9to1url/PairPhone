@@ -254,13 +254,15 @@ int rx(int typing) {
 //        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
 
         i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
-        printf("%s zzzzzzzzzz check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
-        int i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+//        int i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
         if (i < 0) {
             // handle error
         } else if (i > 0) {
             // Decode the received GSM data
+
+            printf("%s zzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
             decode_gsm_data(udpPacket, i);
+            printf("%s zzzzzzzzzzzzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
         }
 
         if (i < 0) {
@@ -406,7 +408,6 @@ void audio_fin(void) {
 
 
 // Global variable to hold the GSM state object
-gsm g_rx = NULL;
 
 const int kSamples_rx = 160;
 
@@ -415,23 +416,27 @@ void decode_gsm_data(unsigned char *udpPacket, int packetSize) {
     gsm_signal dst[kSamples_rx];
     gsm_frame frame;
 
+    printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 1 \r\n", getCurrentDateTimeWithMillis());
     // Create gsm object if it doesn't exist
-    if (!g_rx) {
-        g_rx = gsm_create();
-        if (!g_rx) {
+    if (!global_gsm_state) {
+        global_gsm_state = gsm_create();
+        if (!global_gsm_state) {
             printf("gsm_create failed\n");
             return;
         }
     }
 
+    printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 2 \r\n", getCurrentDateTimeWithMillis());
     // Loop over udpPacket in chunks of gsm_frame
     for (int i = 0; i < packetSize; i += sizeof(gsm_frame)) {
         // Copy the data from udpPacket to frame
         memcpy(frame, udpPacket + i, sizeof(gsm_frame));
 
+        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 3 %lu %lu \r\n", getCurrentDateTimeWithMillis(), sizeof frame, sizeof dst);
         // Decode the data
-        gsm_decode(g_rx, frame, dst);
+        gsm_decode(global_gsm_state, frame, dst);// FIXME jack, crash here
 
+        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 4 \r\n", getCurrentDateTimeWithMillis());
         // Add the decoded data to the samples buffer
         for (int j = 0; j < kSamples_rx; j++) {
             samples[cnt + j] = dst[j];

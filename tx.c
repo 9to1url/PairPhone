@@ -299,9 +299,58 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
 #define SERVER_IP "192.168.2.3" // The IP address of the server
 
 
-gsm g = NULL; // Global variable to hold the GSM state object
 
-const int kSamples = 160;
+//const int kSamples = 160;
+
+//int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
+//
+//    gsm_signal src[kSamples];
+//    gsm_frame frame;
+//    gsm_frame frames[21]; // Array to hold all the GSM frames
+//    int frameCount = 0; // Counter for the number of frames
+//
+//    // Create gsm object if it doesn't exist
+//    if (!gsm_state) {
+//        gsm_state = gsm_create();
+//        if (!gsm_state) {
+//            printf("gsm_create failed\n");
+//            return 0; // false in C
+//        }
+//    }
+//
+//    // Loop over pcmSampleArrayInt in chunks of kSamples
+//    for (int i = 0; i < bufUsedSizeShort; i += kSamples) {
+//        // Copy the data from pcmSampleArrayInt to src
+//        for (int j = 0; j < kSamples; j++) {
+//            src[j] = pcmSampleArrayInt[i + j];
+//        }
+//
+//        printf("%s cccccccccc sizeof src %lu sizeof frame %lu: \r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
+//        // Encode the data
+//        gsm_encode(gsm_state, src, frame);
+//
+//        // Store the frame in the frames array
+//        memcpy(frames[frameCount], frame, sizeof(gsm_frame));
+//        frameCount++;
+//    }
+//
+//    // Send all the frames at once
+//    if (sendto(sock, (const char *)frames, frameCount * sizeof(gsm_frame),
+//               MSG_CONFIRM, (const struct sockaddr *) &server_addr,
+//               sizeof(server_addr)) < 0) {
+//        perror("Send failed");
+//        // close(sock); don't close, the main func will close it
+//        exit(EXIT_FAILURE);
+//    }
+////    printf("%s 4444444444 l__jit_buf: %d\r\n", getCurrentDateTimeWithMillis(), bufUsedSizeShort);
+//
+//    return bufUsedSizeShort;
+//}
+
+#include "wgsm.c" // Include wgsm.c
+
+// ...
+gsm global_gsm_state = NULL; // Global gsm object
 
 int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
 
@@ -311,9 +360,9 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
     int frameCount = 0; // Counter for the number of frames
 
     // Create gsm object if it doesn't exist
-    if (!g) {
-        g = gsm_create();
-        if (!g) {
+    if (!global_gsm_state) {
+        global_gsm_state = gsm_create();
+        if (!global_gsm_state) {
             printf("gsm_create failed\n");
             return 0; // false in C
         }
@@ -326,9 +375,9 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
             src[j] = pcmSampleArrayInt[i + j];
         }
 
+        printf("%s cccccccccc sizeof src %lu sizeof frame %lu: \r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
         // Encode the data
-        gsm_encode(g, src, frame);
-
+        EncodeSamples(global_gsm_state, src, frame); // Use EncodeSamples instead of gsm_encode
         // Store the frame in the frames array
         memcpy(frames[frameCount], frame, sizeof(gsm_frame));
         frameCount++;
