@@ -55,10 +55,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include "time_utils.h"
 
 #define SERVER_PORT 12345 // The port number of the server
 #define SERVER_IP "192.168.2.3" // The IP address of the server
-#define SERVER_IP "10.10.0.2" // The IP address of the server
 
 int main(int argc, char *argv[]) {
     int sock;
@@ -95,8 +95,8 @@ int main(int argc, char *argv[]) {
         i = tx(i, sock, server_addr);   //transmitting
 
         // TODO jack: This is a debug print statement. It should be removed.
-        if (iii % 100000 == 0) {
-//            if (i != -1) printf("\n\ni is: %d     Count: %d\n\n", i, iii);
+        if (iii % 100001 == 0) {
+//            printf("%s 8888888888 pp main loop count: %d\r\n", getCurrentDateTimeWithMillis(), iii);
         }
         iii++;
 

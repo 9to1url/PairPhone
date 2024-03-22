@@ -163,10 +163,11 @@ static int _playjit(int sock, struct sockaddr_in server_addr) {
         // FIXME jack, put 45ms delay here, and comment out the _soundplay
 //        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
         usleep(45 * 1000); // delay for 45ms
-        if (chech_l__jit_buf_count2 % 100001 == 0) {
-            printf("1111111111 in every 100001 l__jit_buf: %d and i: %d\r\n", l__jit_buf, i);
+        if (chech_l__jit_buf_count2 % 101 == 0) {
+            printf("1111111111 in every 101 l__jit_buf: %d and i: %d\r\n", l__jit_buf, i);
         }
         chech_l__jit_buf_count2++;
+
         // instead of play the sound I want to send the samples to network
         i = sendSamplesToNetwork(_jit_buf, l__jit_buf, sock, server_addr);
         if (i) job += 2; //set job
@@ -328,7 +329,7 @@ int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, 
             src[j] = pcmSampleArrayInt[i + j];
         }
 
-        printf("%s dddddddddd sizeof src %lu sizeof frame %lu: \r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
+//        printf("%s dddddddddd sizeof src %lu sizeof frame %lu: \r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
         // Encode the data
         EncodeSamples(global_gsm_state_4encode, src, frame); // Use EncodeSamples instead of gsm_encode
         // Store the frame in the frames array
@@ -368,7 +369,7 @@ int DecodeFrame(gsm g, gsm_frame frame, gsm_signal dst[kSamples]) {
         return 0; // false in C
     }
     PrintSamples(dst);
-    printf("\r\n");
+//    printf("\r\n");
     if (!g) {
         gsm_destroy(obj);
     }
@@ -385,8 +386,8 @@ int EncodeSamples(gsm g, gsm_signal src[kSamples], gsm_frame frame) {
         return 0; // false in C
     }
     gsm_encode(obj, src, frame);
-    PrintFrame(frame);
-    printf("\r\n");
+//    PrintFrame(frame);
+//    printf("\r\n");
     if (!g) {
         gsm_destroy(obj);
     }

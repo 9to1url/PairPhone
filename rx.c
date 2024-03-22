@@ -262,7 +262,20 @@ int rx(int typing) {
             // Decode the received GSM data
 
             printf("%s zzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
-            decode_gsm_data(udpPacket, i);
+            gsm_signal dst[kSamples];
+            gsm_frame frame;
+
+            printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 1 \r\n", getCurrentDateTimeWithMillis());
+            // Create gsm object if it doesn't exist
+            if (!global_gsm_state_4decode) {
+                global_gsm_state_4decode = gsm_create();
+                if (!global_gsm_state_4decode) {
+                    printf("gsm_create failed\n");
+                    return -1;
+                }
+            }
+
+            DecodeFrames(global_gsm_state_4decode, (gsm_frame *)udpPacket, dst);
             printf("%s zzzzzzzzzzzzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
         }
 
@@ -412,36 +425,37 @@ void audio_fin(void) {
 
 gsm global_gsm_state_4decode = NULL; // Global gsm object
 
-// Function to decode GSM data
-void decode_gsm_data(unsigned char *udpPacket, int packetSize) {
-    gsm_signal dst[kSamples];
-    gsm_frame frame;
 
-    printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 1 \r\n", getCurrentDateTimeWithMillis());
-    // Create gsm object if it doesn't exist
-    if (!global_gsm_state_4decode) {
-        global_gsm_state_4decode = gsm_create();
-        if (!global_gsm_state_4decode) {
-            printf("gsm_create failed\n");
-            return;
+int DecodeFrames(gsm g, gsm_frame frames[21], gsm_signal dst[21][kSamples]) {
+
+
+    int i;
+    for (i = 0; i < 20; ++i) { // Decode the first 20 frames
+        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 3 %lu %lu \r\n", getCurrentDateTimeWithMillis(), sizeof frames, sizeof dst);
+        if (!DecodeFrame(g, frames[i], dst[i])) {
+            return 0; // false in C
         }
-    }
 
-    printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 2 \r\n", getCurrentDateTimeWithMillis());
-    // Loop over udpPacket in chunks of gsm_frame
-    for (int i = 0; i < packetSize; i += sizeof(gsm_frame)) {
-        // Copy the data from udpPacket to frame
-        memcpy(frame, udpPacket + i, sizeof(gsm_frame));
-
-        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 3 %lu %lu \r\n", getCurrentDateTimeWithMillis(), sizeof frame, sizeof dst);
-        // Decode the data
-        DecodeFrame(global_gsm_state_4decode, frame, dst);
 
         printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 4 \r\n", getCurrentDateTimeWithMillis());
         // Add the decoded data to the samples buffer
         for (int j = 0; j < kSamples; j++) {
-            samples[cnt + j] = dst[j];
+            samples[cnt + j] = (short) dst[j];
         }
         cnt += kSamples;
     }
+
+    // Handle the fractional frame
+    gsm_signal fractional_dst[(int)(0.25 * kSamples)];
+    if (!DecodeFrame(g, frames[20], fractional_dst)) {
+        return 0; // false in C
+    }
+
+    // Add the fractional decoded data to the samples buffer
+    for (int j = 0; j < (int)(0.25 * kSamples); j++) {
+        samples[cnt + j] = (short) fractional_dst[j];
+    }
+    cnt += (int)(0.25 * kSamples);
+
+    return 1; // true in C
 }

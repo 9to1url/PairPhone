@@ -11,4 +11,5 @@ void PrintFrame(gsm_frame frame);
 int DecodeFrame(gsm g, gsm_frame frame, gsm_signal dst[kSamples]);
 int EncodeSamples(gsm g, gsm_signal src[kSamples], gsm_frame frame);
 
+int DecodeFrames(gsm g, gsm_frame frames[21], gsm_signal dst[21][kSamples]);
 #endif // WGSM_H
