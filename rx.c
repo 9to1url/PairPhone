@@ -74,6 +74,9 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
+
+
 void decode_gsm_data(unsigned char *udpPacket, int packetSize);
 
 
@@ -254,29 +257,15 @@ int rx(int typing) {
         //record
 //        i = _soundgrab((char *) (samples + cnt), 180 * 6);  //try to grab new 48KHZ samples from Line
 
-        i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+//        i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
+        i = recvSamplesFromNetwork(samples + cnt, udp_sock, client_addr);
 //        int i = recvfrom(udp_sock, (char *)udpPacket, sizeof(udpPacket), MSG_WAITALL, (struct sockaddr *)&client_addr, &addr_len);
         if (i < 0) {
             // handle error
         } else if (i > 0) {
-            // Decode the received GSM data
 
-            printf("%s zzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
-            gsm_signal dst[kSamples];
-            gsm_frame frame;
-
-            printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 1 \r\n", getCurrentDateTimeWithMillis());
-            // Create gsm object if it doesn't exist
-            if (!global_gsm_state_4decode) {
-                global_gsm_state_4decode = gsm_create();
-                if (!global_gsm_state_4decode) {
-                    printf("gsm_create failed\n");
-                    return -1;
-                }
-            }
-
-            DecodeFrames(global_gsm_state_4decode, (gsm_frame *)udpPacket, dst);
-            printf("%s zzzzzzzzzzzzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
+//            DecodeFrames(global_gsm_state_4decode, (gsm_frame *)udpPacket, dst);
+//            printf("%s zzzzzzzzzzzzzzzzzzzzz : %d\r\n", getCurrentDateTimeWithMillis(), i);
         }
 
         if (i < 0) {
@@ -293,8 +282,8 @@ int rx(int typing) {
         }
         if ((i > 0) && (i <= (180 * 6))) //some samples grabbed
         {
-            if (hasReceiveUDP % 100001 == 0) {
-                printf("%s ^^^^^^^^^^ check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
+            if (hasReceiveUDP % 101 == 0) {
+//                printf("%s ^^^^^^^^^^ check received UDP packet size: %d\r\n", getCurrentDateTimeWithMillis(), i);
             }
             hasReceiveUDP++;
             cnt += i;  //add grabbed  samples to account
@@ -431,13 +420,11 @@ int DecodeFrames(gsm g, gsm_frame frames[21], gsm_signal dst[21][kSamples]) {
 
     int i;
     for (i = 0; i < 20; ++i) { // Decode the first 20 frames
-        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 3 %lu %lu \r\n", getCurrentDateTimeWithMillis(), sizeof frames, sizeof dst);
         if (!DecodeFrame(g, frames[i], dst[i])) {
             return 0; // false in C
         }
 
 
-        printf("%s zzzzzzzzzzzzzzzzzzzzzzzz here 4 \r\n", getCurrentDateTimeWithMillis());
         // Add the decoded data to the samples buffer
         for (int j = 0; j < kSamples; j++) {
             samples[cnt + j] = (short) dst[j];
@@ -458,4 +445,62 @@ int DecodeFrames(gsm g, gsm_frame frames[21], gsm_signal dst[21][kSamples]) {
     cnt += (int)(0.25 * kSamples);
 
     return 1; // true in C
+}
+
+void byteArrayToShortArray(const uint8_t *byteArray, size_t byteArrayLength, short *shortArray) {
+    for (size_t i = 0; i < byteArrayLength / 2; ++i) {
+        shortArray[i] = (short)((byteArray[2 * i + 1] << 8) | byteArray[2 * i]);
+    }
+}
+
+
+int recvSamplesFromNetwork(short pcmSampleArrayInt[3240/3], int sock, struct sockaddr_in server_addr) {
+    // Step 1: Calculate the length of pcmSampleArrayInt
+    size_t shortArrayLength = 3240/3;
+
+    // Step 2: Create a byte array
+    uint8_t byteArray[shortArrayLength * 2];
+
+    // Calculate the size of each chunk
+    size_t chunkSize = shortArrayLength * 2 / 6;
+
+    // Set the socket to non-blocking mode
+    int flags = fcntl(sock, F_GETFL, 0);
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+
+    // Loop to receive the data 6 times
+    for (int j = 0; j < 6; j++) {
+        // Calculate the start and end indices of the chunk
+        size_t start = j * chunkSize;
+        size_t end = start + chunkSize;
+
+        // Make sure the end index does not exceed the array length
+        if (end > shortArrayLength * 2) {
+            end = shortArrayLength * 2;
+        }
+
+        // Receive the chunk
+        socklen_t addr_len = sizeof(server_addr);
+        ssize_t recvLen = recvfrom(sock, (char *)(byteArray + start), (end - start),
+                                   MSG_WAITALL, (struct sockaddr *) &server_addr,
+                                   &addr_len);
+        if (recvLen < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // The operation would block, so skip this iteration
+                continue;
+            } else {
+                perror("Receive failed");
+                return -1;
+            }
+        }
+
+
+//        unsigned int hash = crc32b((unsigned char *)(byteArray + start), (end - start));
+//        printf("Hash: %08x\r\n", hash); // Print hash in hexadecimal format
+    }
+
+    // Step 3: Call the byteArrayToShortArray function
+    byteArrayToShortArray(byteArray, shortArrayLength * 2, pcmSampleArrayInt);
+
+    return shortArrayLength;
 }

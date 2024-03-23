@@ -486,6 +486,7 @@ static int ResetCT(int state) {
 //===================================================================================
 //make packet of DH sequence
 static int MakeDH(unsigned char *pkt) {
+//    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 6 %lu \r\n", sizeof pkt);
     //input: ignores
     //output DH packet ready for sending
     //returns: -1 for key packet ready, 0 for error
@@ -515,6 +516,7 @@ static int MakeDH(unsigned char *pkt) {
 //===================================================================================
 //process incoming packets on DH stage of connection
 static int ProcessDH(unsigned char *pkt) {
+    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 16 %lu \r\n", sizeof pkt);
     //input: received packet
     //output: none
     //returns: //returns: -1 for DH packet ready, 0 for error
@@ -582,6 +584,7 @@ static int ProcessDH(unsigned char *pkt) {
 //===================================================================================
 //make packet on the identification (AU) stages (3,4,5)
 static int MakeAU(unsigned char *pkt) {
+    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 5 %lu \r\n", sizeof pkt);
     //input: ignores
     //output AU packet ready for sending
     //returns: -2 for AU packet ready, 0 for error
@@ -615,6 +618,7 @@ static int MakeAU(unsigned char *pkt) {
 //===================================================================================
 //process incoming packets on AU stage of connection
 static int ProcessAU(unsigned char *pkt) {
+    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 15 %lu \r\n", sizeof pkt);
     //input: received packet
     //output: none
     //returns: -2 for AU packet processed, 0 for error
@@ -783,6 +787,8 @@ static int AgreedKey() {
 //===================================================================================
 //Build outgoing control or voice packet
 static int MakeCtr(unsigned char *pkt) {
+
+    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 4 %lu \r\n", sizeof pkt);
     //input - voice packet or silence (with VAD flag)
     //output encrypted voice packet or control packet
     //returns -1 for voice or cnt_out for control
@@ -834,6 +840,7 @@ static int MakeCtr(unsigned char *pkt) {
 //===========================================================
 //Process incoming voice/control packet
 static int ProcessCtr(unsigned char *pkt) {
+    printf("zzzzzzzzzzzzzzzzzzzzzzzz here 14 %lu \r\n", sizeof pkt);
     //input: encrypted voice or control pkt (auto detected)
     //output: decrypted voice or none
     //returns: -3 for voice or password authentication result (0-8) otherwise

@@ -5,7 +5,8 @@
 
 
 # Debugging options  
-DEBUG = -O -DHEXDUMP
+#DEBUG = -O -DHEXDUMP
+DEBUG = -g
 
 #Full duplex:
 CCFLAGS =  -DAUDIO_BLOCKING -DLINUX -DM_LITTLE_ENDIAN -DNEEDED_LINEAR -DLINUX_DSP_SMALL_BUFFER -DHAVE_DEV_RANDOM
@@ -112,3 +113,11 @@ clean:
 	  do (cd $$I; echo "==>Entering directory `pwd`"; $(MAKE) $@ || exit 1); done
 
 # DO NOT DELETE
+
+
+# Valgrind options
+VALGRIND = valgrind --leak-check=full --show-leak-kinds=all
+
+# New target for Valgrind build
+valgrind: pp
+	$(VALGRIND) ./pp

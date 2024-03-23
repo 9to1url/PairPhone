@@ -164,7 +164,7 @@ static int _playjit(int sock, struct sockaddr_in server_addr) {
 //        i = _soundplay(l__jit_buf, (unsigned char *) (p__jit_buf)); //play, returns number of played samples
         usleep(45 * 1000); // delay for 45ms
         if (chech_l__jit_buf_count2 % 101 == 0) {
-            printf("1111111111 in every 101 l__jit_buf: %d and i: %d\r\n", l__jit_buf, i);
+//            printf("1111111111 in every 101 l__jit_buf: %d and i: %d\r\n", l__jit_buf, i);
         }
         chech_l__jit_buf_count2++;
 
@@ -272,16 +272,16 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
 //        printf("%s 3333333333 check if l__jit_buf changed after modulate: %d\r\n", getCurrentDateTimeWithMillis(), l__jit_buf);
 
         // TODO jack, Add the modified file writing code with flag check here
-        if (!hasWrittenSamplesToFile) {
-            FILE *fp = fopen("modulated_samples.raw", "wb");
-            if (fp != NULL) {
-                fwrite(_jit_buf, sizeof(short), l__jit_buf, fp);
-                fclose(fp);
-                hasWrittenSamplesToFile = 1; // Set the flag to indicate samples have been written
-            } else {
-                fprintf(stderr, "Failed to open file for writing.\n");
-            }
-        }
+//        if (!hasWrittenSamplesToFile) {
+//            FILE *fp = fopen("modulated_samples.raw", "wb");
+//            if (fp != NULL) {
+//                fwrite(_jit_buf, sizeof(short), l__jit_buf, fp);
+//                fclose(fp);
+//                hasWrittenSamplesToFile = 1; // Set the flag to indicate samples have been written
+//            } else {
+//                fprintf(stderr, "Failed to open file for writing.\n");
+//            }
+//        }
 
         txbuf[11] = 0; //clear tx buffer (processed)
         _playjit(sock, server_addr);  //immediately play baseband into Line
@@ -297,8 +297,6 @@ int tx(int job, int sock, struct sockaddr_in server_addr) {
     return job;
 }
 
-#define SERVER_PORT 12345 // The port number of the server
-#define SERVER_IP "192.168.2.3" // The IP address of the server
 
 
 // ...
@@ -306,46 +304,68 @@ gsm global_gsm_state_4encode = NULL; // Global gsm object
 const int kSamples = 160;
 const int kFrameSize = 33;
 
+void shortArrayToByteArray(const short *shortArray, size_t shortArrayLength, uint8_t *byteArray) {
+    for (size_t i = 0; i < shortArrayLength; ++i) {
+        byteArray[2 * i] = (uint8_t)(shortArray[i] & 0xFF); // LSB
+        byteArray[2 * i + 1] = (uint8_t)((shortArray[i] >> 8) & 0xFF); // MSB
+    }
+}
+
+unsigned int crc32b(unsigned char *message, size_t len) {
+    int i, j;
+    unsigned int byte, crc, mask;
+
+    i = 0;
+    crc = 0xFFFFFFFF;
+    while (len--) {
+        byte = message[i];            // Get next byte.
+        crc = crc ^ byte;
+        for (j = 7; j >= 0; j--) {    // Do eight times.
+            mask = -(crc & 1);
+            crc = (crc >> 1) ^ (0xEDB88320 & mask);
+        }
+        i = i + 1;
+    }
+    return ~crc;
+}
+
+
 int sendSamplesToNetwork(short pcmSampleArrayInt[3240], short bufUsedSizeShort, int sock, struct sockaddr_in server_addr) {
 
-    gsm_signal src[kSamples];
-    gsm_frame frame;
-    gsm_frame frames[21]; // Array to hold all the GSM frames
-    int frameCount = 0; // Counter for the number of frames
+    // Step 1: Calculate the length of pcmSampleArrayInt
+    size_t shortArrayLength = 3240;
 
-    // Create gsm object if it doesn't exist
-    if (!global_gsm_state_4encode) {
-        global_gsm_state_4encode = gsm_create();
-        if (!global_gsm_state_4encode) {
-            printf("gsm_create failed\n");
-            return 0; // false in C
+    // Step 2: Create a byte array
+    uint8_t byteArray[shortArrayLength * 2];
+
+    // Step 3: Call the shortArrayToByteArray function
+    shortArrayToByteArray(pcmSampleArrayInt, shortArrayLength, byteArray);
+    // Calculate the size of each chunk
+    size_t chunkSize = shortArrayLength / 3 * 2 / 6;
+
+    // Loop to send the data 6 times
+    for (int j = 0; j < 18; j++) {
+        // Calculate the start and end indices of the chunk
+        size_t start = j * chunkSize;
+        size_t end = start + chunkSize;
+
+        // Make sure the end index does not exceed the array length
+        if (end > shortArrayLength * 2) {
+            end = shortArrayLength * 2;
+        }
+
+//        unsigned int hash = crc32b((unsigned char *)(byteArray + start), (end - start));
+//        printf("Hash: %08x\r\n", hash); // Print hash in hexadecimal format
+
+        // Send the chunk
+        if (sendto(sock, (const char *)(byteArray + start), (end - start),
+                   MSG_CONFIRM, (const struct sockaddr *) &server_addr,
+                   sizeof(server_addr)) < 0) {
+            perror("Send failed");
+            exit(EXIT_FAILURE);
         }
     }
 
-    // Loop over pcmSampleArrayInt in chunks of kSamples
-    for (int i = 0; i < bufUsedSizeShort; i += kSamples) {
-        // Copy the data from pcmSampleArrayInt to src
-        for (int j = 0; j < kSamples; j++) {
-            src[j] = pcmSampleArrayInt[i + j];
-        }
-
-//        printf("%s dddddddddd sizeof src %lu sizeof frame %lu: \r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
-        // Encode the data
-        EncodeSamples(global_gsm_state_4encode, src, frame); // Use EncodeSamples instead of gsm_encode
-        // Store the frame in the frames array
-        memcpy(frames[frameCount], frame, sizeof(gsm_frame));
-        frameCount++;
-    }
-
-    // Send all the frames at once
-    if (sendto(sock, (const char *)frames, frameCount * sizeof(gsm_frame),
-               MSG_CONFIRM, (const struct sockaddr *) &server_addr,
-               sizeof(server_addr)) < 0) {
-        perror("Send failed");
-        // close(sock); don't close, the main func will close it
-        exit(EXIT_FAILURE);
-    }
-//    printf("%s 4444444444 l__jit_buf: %d\r\n", getCurrentDateTimeWithMillis(), bufUsedSizeShort);
 
     return bufUsedSizeShort;
 }
@@ -363,12 +383,13 @@ int DecodeFrame(gsm g, gsm_frame frame, gsm_signal dst[kSamples]) {
         printf("gsm_create failed\r\n");
         return 0; // false in C
     }
+    printf("%s hhhhhhhhhh frame %d dst %d\r\n", getCurrentDateTimeWithMillis(), sizeof frame, sizeof dst);
     int result = gsm_decode(obj, frame, dst);
     if (result != 0) {
         printf("gsm_decode: %d\r\n", result);
         return 0; // false in C
     }
-    PrintSamples(dst);
+//    PrintSamples(dst);
 //    printf("\r\n");
     if (!g) {
         gsm_destroy(obj);
@@ -385,6 +406,7 @@ int EncodeSamples(gsm g, gsm_signal src[kSamples], gsm_frame frame) {
         printf("gsm_create failed\r\n");
         return 0; // false in C
     }
+    printf("%s gggggggggg src %d frame %d\r\n", getCurrentDateTimeWithMillis(), sizeof src, sizeof frame);
     gsm_encode(obj, src, frame);
 //    PrintFrame(frame);
 //    printf("\r\n");
